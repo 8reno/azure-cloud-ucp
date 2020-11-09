@@ -88,7 +88,9 @@ terraform apply -auto-approve
 6.1 Take note of the following:
  
 6.1.1 public IP address dynamically assigned to the bastion host (BASTION_PUBLIC_IP_ADDRESS)
+
 6.1.2 internal IP address of the manager VMSS Azure Load Balancer (should be 10.0.3.254)
+
 6.1.3 internal IP addresses of the manager VMSS instances (MANAGER00000N_INTERNAL_IP) and the worker VMSS instances (WORKER00000N_INTERNAL_IP).  N should range from 0 to 2.
 
 7. Manually provision docker enterprise cluster as follows:
@@ -96,7 +98,8 @@ terraform apply -auto-approve
 7.1 ssh into manager000000 VMSS instance via bastion host and install Swarm and Docker Enterprise
 
 ```
-ssh -J BASTION_PUBLIC_IP_ADDRESS localadmin@MANAGER000000_INTERNAL_IP
+ssh -i PATH_TO_PRIVATE_KEY_FILE localadmin@BASTION_PUBLIC_IP_ADDRESS; exit # for some reason directly tunnelling to docker nodes fails unless this is done first
+ssh -i PATH_TO_PRIVATE_KEY_FILE -J localadmin@BASTION_PUBLIC_IP_ADDRESS localadmin@MANAGER000000_INTERNAL_IP
 sudo su
 docker swarm init # initialise swarm cluster. take record of worker join token output for later use (WORKER_JOIN_TOKEN)
 docker config create com.docker.ucp.config /tmp/ucp-config.toml # create docker config object from cloud-init supplied file
@@ -108,7 +111,7 @@ docker swarm join-token manager # take record of manager join token output for l
 7.2 ssh into the 3 worker00000n VMs via bastion host and join workers to Swarm cluster
 
 ```
-ssh -j BASTION_PUBLIC_IP_ADDRESS localadmin@WORKER00000N_INTERNAL_IP
+ssh -i PATH_TO_PRIVATE_KEY_FILE -j localadmin@BASTION_PUBLIC_IP_ADDRESS localadmin@WORKER00000N_INTERNAL_IP
 sudo docker swarm join --token WORKER_JOIN_TOKEN MANAGER000000_INTERNAL_IP:2377
 ```
 
@@ -126,4 +129,5 @@ sudo docker swarm join --token MANAGER_JOIN_TOKEN MANAGER000000_INTERNAL_IP:2377
 ```
 
 7.5 observe logs of ucp-kv docker containers on both manager0000000 and manager000001 nodes
+
 

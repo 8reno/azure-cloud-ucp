@@ -16,8 +16,6 @@ locals{
     security_group_name         = azurerm_network_security_group.docker.name
   }
 
-  #cloudinit_fileconfig = templatefile("45-cloudconfig.tpl", local.cloud_init_vars)
-
 }
 
 data "template_cloudinit_config" "cloudinitconfig" {
@@ -28,9 +26,5 @@ data "template_cloudinit_config" "cloudinitconfig" {
     content_type = "text/cloud-config"
     content      = templatefile("45-cloudconfig.tpl", local.cloud_init_vars)
   }
-  #part {
-  #  content_type = "text/x-shellscript"
-  #  content      = templatefile("46-cloudconfig.tpl", {})
-  #}
 }
 

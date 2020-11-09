@@ -83,6 +83,7 @@ resource "azurerm_virtual_machine" "bastion" {
   os_profile {
     computer_name                   = "bastion"
     admin_username                  = var.admin_username
+    custom_data                     = data.template_cloudinit_config.bastioncloudinitconfig.rendered
   }
 
   os_profile_linux_config {
@@ -91,5 +92,15 @@ resource "azurerm_virtual_machine" "bastion" {
       path                          = "/home/${var.admin_username}/.ssh/authorized_keys"
       key_data                      = file(var.admin_public_key_file)
     }
+  }
+}
+
+data "template_cloudinit_config" "bastioncloudinitconfig" {
+  gzip          = true
+  base64_encode = true
+
+  part {
+    content_type = "text/x-shellscript"
+    content      = templatefile("25-cloudconfig.tpl",{})
   }
 }
