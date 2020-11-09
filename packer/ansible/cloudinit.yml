@@ -1,0 +1,40 @@
+---
+- name: install and configure cloud init
+  hosts: all
+  become: yes
+  tasks:
+    - name: install cloud-init packages
+      yum:
+        name: [ "gdisk", "cloud-utils-growpart", "cloud-init" ]
+        state: installed
+
+    - name: Disable Linux Agent Provisioning 
+      lineinfile:
+        path: /etc/waagent.conf
+        regex: "Provisioning.Enabled=y"
+        line: "Prosivioning.Enabled=n"
+ 
+    - name: Enable Cloud init in Linux Agent
+      lineinfile:
+        path: /etc/waagent.conf
+        regex: "Provisioning.UseCloudInit=n"
+        line: "Prosivioning.UseCloudInit=y"
+
+    - name: Disable Resource Disk Format in Linux Agent
+      lineinfile:
+        path: /etc/waagent.conf
+        regex: "ResourceDisk.Format=y"
+        line: "ResourceDisk.Format=n"
+
+    - name: Disable Swap in Linux Agent
+      lineinfile:
+        path: /etc/waagent.conf
+        regex: "ResourceDisk.EnableSwap=y"
+        line: "ResourceDisk.EnableSwap=n"
+
+    - name: disable Azure secondary network interfaces setup
+      lineinfile:
+        path: /etc/cloud/cloud.cfg.d/10-disable_azure_netcfg.cfg
+        line: "datasource:\n  Azure:\n    apply_network_config: false"
+        create: true
+

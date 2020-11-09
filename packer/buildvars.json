@@ -1,0 +1,16 @@
+{
+  "client_id"                             : "{{ AZURE_SERVICE_PRINCIPAL_CLIENT_ID }}",
+  "client_secret"                         : "{{ AZURE_SERVICE_PRINCIPAL_CLIENT_SECRET }}",
+  "subscription_id"                       : "{{ AZURE_SUBSCRIPTION_ID }}",
+  "tenant_id"                             : "{{ AZURE_TENANT_ID }}",
+  "managed_image_name"                    : "docker",
+  "managed_image_resource_group_name"     : "images",
+  "image_publisher"                       : "RedHat",
+  "image_offer"                           : "RHEL",
+  "image_sku"                             : "7-RAW",
+  "image_version"                         : "7.7.2019090418",
+  "vm_size"                               : "{{ AZURE_VM_COMPUTE_SIZE }}",
+  "location"                              : "{{ AZURE_LOCATION }}",
+  "ssh_username"                          : "localadmin",
+  "ssh_private_key_file"                  : "{{ PATH_TO_SSH_PRIVATE_KEY_FILE }}"
+}

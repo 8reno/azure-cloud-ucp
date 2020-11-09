@@ -1,0 +1,72 @@
+{
+    "variables": {
+        "client_id"                             : "{{env `TF_VAR_CLIENT_ID`}}",
+        "client_secret"                         : "{{env `TF_VAR_CLIENT_SECRET`}}",
+        "subscription_id"                       : "{{env `TF_VAR_SUBSCRIPTION_ID`}}",
+        "tenant_id"                             : "{{env `TF_VAR_TENANT_ID`}}",
+        "managed_image_name"                    : "{{env `MANAGED_IMAGE_NAME`}}",
+        "managed_image_resource_group_name"     : "{{env `MANAGED_IMAGE_RESOURCE_GROUP`}}",
+        "image_publisher"                       : "{{env `TF_VAR_LINUX_IMAGE_PUBLISHER`}}",
+        "image_offer"                           : "{{env `TF_VAR_LINUX_IMAGE_OFFER`}}",
+        "image_sku"                             : "{{env `TF_VAR_LINUX_IMAGE_SKU`}}",
+        "image_version"                         : "{{env `TF_VAR_LINUX_IMAGE_VERSION`}}",
+        "vm_size"                               : "{{env `TF_VAR_LINUX_INSTANCE_TYPE`}}",
+        "location"                              : "{{env `TF_VAR_REGION`}}",
+        "ssh_username"                          : "{{env `TF_VAR_LINUX_USER`}}",
+        "ssh_private_key_file"                  : "{{env `TF_VAR_LINUX_USER_KEY_FILE`}}"
+    },
+    "builders": [{
+            "type": "azure-arm",
+            "client_id"                           : "{{user `client_id`}}",
+            "client_secret"                       : "{{user `client_secret`}}",
+            "subscription_id"                     : "{{user `subscription_id`}}",
+            "tenant_id"                           : "{{user `tenant_id`}}",
+            "managed_image_resource_group_name"   : "{{user `managed_image_resource_group_name`}}",
+            "managed_image_name"                  : "{{user `managed_image_name`}}",
+        
+            "os_type"                             : "Linux",
+            "image_publisher"                     : "{{user `image_publisher`}}",
+            "image_offer"                         : "{{user `image_offer`}}",
+            "image_sku"                           : "{{user `image_sku`}}",
+            "image_version"                       : "{{user `image_version`}}",
+          
+            "location"                            : "{{user `location`}}",
+            "vm_size"                             : "{{user `vm_size`}}",
+            "ssh_username"                        : "{{user `ssh_username`}}",
+            "ssh_private_key_file"                : "{{user `ssh_private_key_file`}}"
+    }],
+    "provisioners": [
+        {
+            "type": "shell",
+            "execute_command": "chmod +x {{ .Path }}; {{ .Vars }} sudo -E sh '{{ .Path }}'",
+            "inline": [
+              "reboot"
+            ],
+            "inline_shebang": "/bin/sh -x",
+            "expect_disconnect": true
+        },
+        {
+            "type": "shell",
+            "execute_command": "chmod +x {{ .Path }}; {{ .Vars }} sudo -E sh '{{ .Path }}'",
+            "scripts": [
+              "scripts/deploy.sh"
+            ],
+            "inline_shebang": "/bin/sh -x",
+            "pause_before": "30s"
+        },
+        {
+            "type": "ansible",
+            "playbook_file": "ansible/cloudinit.yml",
+            "user": "{{ user `ssh_username` }}",
+            "ansible_env_vars": ["ANSIBLE_ROLES_PATH=ansible/roles","PYTHONUNBUFFERED=1"]
+        },
+        {
+            "execute_command": "chmod +x {{ .Path }}; {{ .Vars }} sudo -E sh '{{ .Path }}'",
+            "inline": [
+              "/usr/sbin/waagent -force -deprovision+user && export HISTSIZE=0 && sync"
+            ],
+            "inline_shebang": "/bin/sh -x",
+            "type": "shell"
+        }
+    ]
+}
