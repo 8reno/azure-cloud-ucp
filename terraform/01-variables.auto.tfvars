@@ -1,7 +1,7 @@
 subscription_id   = "{{ AZURE_SUBSCRIPTION_ID }}"
 tenant_id         = "{{ AZURE_TENANT_ID }}"
 client_id         = "{{ AZURE_SERVICE_PRINCIPAL_CLIENT_ID }}"
-client_secret     = "{{ AZURE_SERVICE_PRINCIPAL_CLIENT_SECRET }}""
+client_secret     = "{{ AZURE_SERVICE_PRINCIPAL_CLIENT_SECRET }}"
 
 location          = "{{ AZURE_LOCATION }}"
 resource_group    = "vnet"
