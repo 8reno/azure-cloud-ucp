@@ -9,7 +9,7 @@ resource "azurerm_virtual_machine_scale_set" "manager" {
   sku {
     name                             = var.manager_compute_sku
     tier                             = "Standard"
-    capacity                         = 3
+    capacity                         = 1
   }
 
   storage_profile_image_reference {

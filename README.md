@@ -1,14 +1,15 @@
-This repository contains the code necessary to provision an Docker Enterprise cluster on Azure public cloud in order to troubleshoot a number of issues with Docker Enterprise 3.1.
+This repository contains the code necessary to provision an Docker Enterprise cluster on Azure public cloud in order to troubleshoot a number of issues with Docker Enterprise.
 
 The architecture of this infrastructure is:
 
 - Azure vnet with 10.0.0.0/22 address space
 - Public subnet (10.0.1.0/24) with an Ubuntu 18.04 Marketplace Image acting as a bastion host
 - Docker subnet (10.0.2.0/23) containing two VM scale sets (manager and worker) from Custom VM Images.
-- An internal Azure load balancer is provisioned to handle requests to the manager scale set instances, in particular the UCP portal.
+- An internal Azure load balancer is provisioned, statically assigned to the IP address of 10.0.3.254, to handle requests to the manager scale set instance, in particular the UCP portal.
 - The VMSS Custom VM Images are built via Packer. They are based on RHEL7 Azure marketplace images and simply provision the Docker Enterprise yum repositories and Docker Enterprise Engine.
-- VMSS Scaling is set to Manual.  No scaling action is required for these purposes.
+- A small cluster is provisioned (1 manager and 3 worker nodes). VMSS Scaling is set to Manual as no scaling action is required for these purposes.
 - cloud-init is used to deploy the Azure Cloud provider configuration file and the UCP Config TOML file to the nodes.
+- A k8s workload (nginx) will be deployed with an External Load Balancer k8s service configuration.  The IP address of this LB will be statically assigned to 10.0.3.253.
 
 To provision cluster:
 
@@ -91,7 +92,7 @@ terraform apply -auto-approve
 
 6.1.2 internal IP address of the manager VMSS Azure Load Balancer (should be 10.0.3.254)
 
-6.1.3 internal IP addresses of the manager VMSS instances (MANAGER00000N_INTERNAL_IP) and the worker VMSS instances (WORKER00000N_INTERNAL_IP).  N should range from 0 to 2.
+6.1.3 internal IP address of the manager VMSS instance (MANAGER000000_INTERNAL_IP) and the worker VMSS instances (WORKER00000N_INTERNAL_IP).  N should range from 0 to 2.
 
 7. Manually provision docker enterprise cluster as follows:
 
@@ -104,7 +105,7 @@ sudo su
 docker swarm init # initialise swarm cluster. take record of worker join token output for later use (WORKER_JOIN_TOKEN)
 docker config create com.docker.ucp.config /tmp/ucp-config.toml # create docker config object from cloud-init supplied file
 read -s UCP_PASSWORD # enter ucp admin password
-docker container run --name ucp-init --volume /var/run/docker.sock:/var/run/docker.sock docker/ucp:3.3.1 install --admin-username admin --admin-password $UCP_PASSWORD --san 10.0.3.254 --san localhost --external-service-lb 10.0.3.254 --pod-cidr 10.0.2.0/23 --existing-config # install UCP
+docker container run --name ucp-init --volume /var/run/docker.sock:/var/run/docker.sock docker/ucp:3.3.4 install --admin-username admin --admin-password $UCP_PASSWORD --san 10.0.3.254 --san localhost --external-service-lb 10.0.3.254 --pod-cidr 10.0.2.0/23 --existing-config # install UCP
 docker swarm join-token manager # take record of manager join token output for later use (MANAGER_JOIN_TOKEN)
 ```
 
@@ -122,12 +123,57 @@ ssh -i PATH_TO_SSH_PRIVATE_KEY -L 8443:10.0.3.254:443 localadmin@BASTION_PUBLIC_
 ```
 browse to https://localhost:8443
 
-7.4 ssh into manager00000001 VM via bastion host and join manager to Swarm cluster
+7.4 deploy k8s workload with ExternalLB type LoadBalancer from bastion host
+
+7.4.1 set up kubectl on bastion host
 
 ```
-sudo docker swarm join --token MANAGER_JOIN_TOKEN MANAGER000000_INTERNAL_IP:2377
+ssh -i PATH_TO_PRIVATE_KEY_FILE localadmin@BASTION_PUBLIC_IP_ADDRESS
+read -s UCP_PASSWORD
+AUTHTOKEN=$(curl -sk -d "{\"username\":\"admin\",\"password\":\"$UCP_PASSWORD\"}" https://10.0.3.254/auth/login | jq -r .auth_token)
+curl -k -H "Authorization: Bearer $AUTHTOKEN" https://10.0.3.254/api/clientbundle -o bundle.zip
+unzip bundle.zip 
+eval "$(<env.sh)"
+curl -LO "https://storage.googleapis.com/kubernetes-release/release/v1.14.0/bin/linux/amd64/kubectl"
+chmod +x kubectl
 ```
 
-7.5 observe logs of ucp-kv docker containers on both manager0000000 and manager000001 nodes
+7.4.2 deploy nginx helm chart 
+```
+export LOADBALANCER_IP="10.0.3.253"
+curl -LO "https://get.helm.sh/helm-v3.3.1-linux-amd64.tar.gz"
+tar zxvf helm-v3.3.1-linux-amd64.tar.gz
+linux-amd64/helm repo add bitnami https://charts.bitnami.com/bitnami
+cat <<EOF > nginx.yaml
+---
+service:
+  loadBalancerIP: $LOADBALANCER_IP
+  annotations:
+    service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+EOF
+linux-amd64/helm install nginx bitnami/nginx -f nginx.yaml
+./kubectl get svc -A
+```
 
+7.5 In the Azure Portal, observe an Azure Load Balancer being created automatically by the Azure cloud provider (called "kubernetes-internal" or "worker-internal").  
+
+Select this Load Balancer and in the Backend Pools tab, observe the warning:
+
+"Backend pool 'kubernetes' was removed from Virtual machine scale set 'worker'. Upgrade all the instances of 'worker' for this change to apply
+
+Notice that the 3 worker instances are in the "kubernetes" Backend Pool.
+
+7.6 In the Azure Portal, select the "worker" Virtual Machine Scale Set resource, and select Instances.  You will now observe that all the worker instances state that they do not conform to the Latest Model.
+
+7.7 Update the VMSS instances to the Latest VMSS model:
+
+In the Instances tab, select all three worker instances and click Upgrade.
+
+Once the upgrade is complete, click Refresh and the instances will now show that they are updated to the Latest Model.
+
+However, in the kubernetes-internal Load Balancer resource, click on Backend Pools.  The warning is now no longer displayed, however you will see that three workers are no longer in the "kubernetes" backend pool.
+
+This is the description of the bug that was reported upstream.  The cloud provider only updates the load balancer details in the backend instances and not the VMSS manifest.  When upgrading the instances to match the manifest, they are removed from the Load Balancer backend.
+
+7.8 The expected behaviour from the bugfix is that when the helm chart with an external Load Balancer is deployed, the cloud provider will update both the backend instances as well as the VMSS manifest with the load balancer details. 
 

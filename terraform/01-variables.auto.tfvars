@@ -12,6 +12,7 @@ admin_username           = "localadmin"
 admin_public_key_file    = "{{ PATH_TO_SSH_PRIVATE_KEY_FILE }}"
 
 azure_ip_count          = 32
+ucp_version             = "3.3.4"
 
 permitted_source_addresses = [ "{{ SOURCE_IP_CIDR_TO_ACCESS_BASTION_HOST }}" ]
 

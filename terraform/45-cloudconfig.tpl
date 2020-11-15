@@ -50,4 +50,7 @@ write_files:
         custom_kube_api_server_flags = ["--profiling=false"]
         custom_kube_scheduler_flags = ["--profiling=false"]
         custom_kube_controller_manager_flags = ["--profiling=false", "--terminated-pod-gc-threshold=10"]
+%{ if length(regexall("^3.3.*",ucp_version)) > 0  ~}
         pre_logon_message = ""
+        calico_vxlan = false
+%{ endif ~}

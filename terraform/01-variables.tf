@@ -12,6 +12,7 @@ variable "admin_username" {}
 variable "admin_public_key_file" {}
 
 variable "azure_ip_count" {}
+variable "ucp_version" {}
 
 variable "bastion_compute_sku" {}
 variable "manager_compute_sku" {}

@@ -14,6 +14,7 @@ locals{
     aad_client_id               = azuread_application.docker.application_id
     aad_client_secret           = random_password.sp_docker.result
     security_group_name         = azurerm_network_security_group.docker.name
+    ucp_version                 = var.ucp_version
   }
 
 }
