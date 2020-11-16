@@ -105,7 +105,7 @@ sudo su
 docker swarm init # initialise swarm cluster. take record of worker join token output for later use (WORKER_JOIN_TOKEN)
 docker config create com.docker.ucp.config /tmp/ucp-config.toml # create docker config object from cloud-init supplied file
 read -s UCP_PASSWORD # enter ucp admin password
-docker container run --name ucp-init --volume /var/run/docker.sock:/var/run/docker.sock docker/ucp:3.3.4 install --admin-username admin --admin-password $UCP_PASSWORD --san 10.0.3.254 --san localhost --external-service-lb 10.0.3.254 --pod-cidr 10.0.2.0/23 --existing-config # install UCP
+docker container run --name ucp-init --volume /var/run/docker.sock:/var/run/docker.sock mirantis/ucp:3.3.4 install --admin-username admin --admin-password $UCP_PASSWORD --san 10.0.3.254 --san localhost --external-service-lb 10.0.3.254 --pod-cidr 10.0.2.0/23 --existing-config # install UCP
 docker swarm join-token manager # take record of manager join token output for later use (MANAGER_JOIN_TOKEN)
 ```
 
