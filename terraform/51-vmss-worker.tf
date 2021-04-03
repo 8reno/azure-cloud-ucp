@@ -9,7 +9,7 @@ resource "azurerm_virtual_machine_scale_set" "worker" {
   sku {
     name                             = var.worker_compute_sku
     tier                             = "Standard"
-    capacity                         = 3
+    capacity                         = var.worker_vmss_count
   }
 
   storage_profile_image_reference {

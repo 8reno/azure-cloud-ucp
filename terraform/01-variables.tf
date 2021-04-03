@@ -16,6 +16,19 @@ variable "ucp_version" {}
 
 variable "bastion_compute_sku" {}
 variable "manager_compute_sku" {}
+variable "manager_vmss_count" {}
+
 variable "worker_compute_sku" {}
+variable "worker_vmss_count" {}
 
 variable "permitted_source_addresses" { type = list }
+
+variable "windows_compute_sku" {}
+variable "windows_admin_password" {}
+variable "windows_admin_username" {}
+
+variable "external_ucp_lb" {} 
+
+variable "dns_zone_name" {}
+
+variable "ucp_public_ip_domain_label" {}

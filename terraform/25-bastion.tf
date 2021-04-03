@@ -10,8 +10,10 @@ resource "azurerm_network_security_group" "bastion" {
   name                              = "bastion"
   location                          = azurerm_resource_group.rg.location
   resource_group_name               = azurerm_resource_group.rg.name
+}
 
-  security_rule {
+resource "azurerm_network_security_rule" "permit-ssh" {
+
     name                            = "Permit-SSH"
     priority                        = 100
     direction                       = "Inbound"
@@ -21,9 +23,11 @@ resource "azurerm_network_security_group" "bastion" {
     destination_port_range          = "22"
     source_address_prefixes         = var.permitted_source_addresses
     destination_address_prefix      = "VirtualNetwork"
-  }
+    resource_group_name             = azurerm_resource_group.rg.name
+    network_security_group_name     = azurerm_network_security_group.bastion.name
+}
 
-  security_rule {
+resource "azurerm_network_security_rule" "permit-gateway" {
     name                            = "Permit-Gateway"
     priority                        = 120
     direction                       = "Inbound"
@@ -33,7 +37,8 @@ resource "azurerm_network_security_group" "bastion" {
     destination_port_range          = "*"
     source_address_prefix           = "VirtualNetwork"
     destination_address_prefix      = "*"
-  }
+    resource_group_name             = azurerm_resource_group.rg.name
+    network_security_group_name     = azurerm_network_security_group.bastion.name
 }
 
 resource "azurerm_subnet_network_security_group_association" "bastion" {

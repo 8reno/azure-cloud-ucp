@@ -7,8 +7,8 @@ resource "azurerm_route_table" "gateway" {
   route {
       name                      = "Default"
       address_prefix            = "0.0.0.0/0"
-      next_hop_type             = "VirtualAppliance"
-      next_hop_in_ip_address    = azurerm_network_interface.bastion.private_ip_address
+      next_hop_type             = var.external_ucp_lb ? "VirtualAppliance" : "Internet"
+      next_hop_in_ip_address    = var.external_ucp_lb ? azurerm_network_interface.bastion.private_ip_address : null
   }
 
 }
